@@ -13,9 +13,9 @@ Sunshine so it captures that display.
 | Path | What it does |
 |---|---|
 | `tools/vscreen/` | **Virtual 16x9 Screen.app**: an invisible background app (no Dock icon, no window) that keeps a virtual 16:9 display connected while it runs. It uses CoreGraphics' private `CGVirtualDisplay` classes, the same ones DeskPad and BetterDisplay use. |
-| `tools/mirror.m` | `mirror list \| on <name> \| off \| main <name>\|builtin`: switches mirroring and picks the main display. Uses public CoreGraphics API; changes last for the login session only. |
-| `scripts/tvmode.sh` | `tvmode.sh on \| off \| status`: the TV mode toggle. |
-| `shortcuts/` | `TV Mode ON.command` / `TV Mode OFF.command`: double-click versions of the toggle. |
+| `tools/mirror.m` | `mirror list \| on <name> \| off \| main <name>\|builtin \| mode <name> <W>x<H>`: switches mirroring, picks the main display and sets a display's resolution. Uses public CoreGraphics API; changes last for the login session only. |
+| `scripts/tvmode.sh` | `tvmode.sh on [1080p\|1440p\|4k] \| off \| status`: the TV mode toggle. |
+| `shortcuts/` | `TV Mode ON.command`, `TV Mode ON 4K.command`, `TV Mode OFF.command`: double-click versions of the toggle. |
 | `scripts/nxgame.sh` | `nxgame.sh start\|stop <bundle id> [VAR=value ...]`: starts an nxnative game fullscreen without its launcher window and quits it cleanly when the stream ends. |
 | `covers/badge.swift` | `swift badge.swift in.png out.png HUD`: draws a text badge in the top-right corner of a Moonlight cover. |
 | `examples/` | A Sunshine `apps.json` with nxnative game entries, and the `sunshine.conf` used with it. |
@@ -51,9 +51,27 @@ installed app; `./install.sh --rebuild-vscreen` replaces it, and you must then a
 `tvmode.sh status` shows the displays and whether Sunshine and the virtual screen are running. Each run is
 logged to `~/.config/sunshine/tvmode.log`.
 
-Settings at the top of `tvmode.sh`:
+### 1440p and 4K
 
-- `RESOLUTION=(1920 1080 60)`: the virtual display mode.
+`tvmode.sh on 1440p` or `tvmode.sh on 4k` (or **TV Mode ON 4K**) runs the virtual display at 2560×1440 or
+3840×2160. Running `on` again with another size switches it; plain `on` is 1080p. Set the same resolution in
+Moonlight's settings on the TV, pick HEVC if it offers it, and raise the bitrate (about 40-80 Mbps for 4K at
+60 fps). Many TVs, Samsung's among them, have a 100 Mbit/s Ethernet port, so keep the bitrate well under that
+on a cable.
+
+- The virtual display runs at 1x, so at 1440p and 4K the Mac's menus and windows look small on both screens.
+  Games running fullscreen fill it at any size.
+- A higher stream resolution only helps if the game draws that many pixels. Donkey Kong Bananza renders its
+  scene at 1676×943 and its upscaler outputs at most 2304×1296 (less in busy scenes), so 1440p already holds
+  all of its detail. 4K adds little but costs more bitrate.
+- macOS mirrors two screens at a size both share (1920×1080), so `tvmode.sh` sets the size with
+  `mirror mode` after it turns mirroring on, before Sunshine restarts.
+
+### Settings
+
+At the top of `tvmode.sh`:
+
+- `DEFAULT_SIZE=1080p` and `REFRESH=60`: the virtual display's size when none is given, and its refresh rate.
 - `MODE=mirror`: the built-in screen shows the same 16:9 picture, letterboxed, so the Mac stays usable.
   `MODE=extend` makes the 16:9 display the only main display and places the built-in screen beside it.
 - `SOURCE=dummy` with `DUMMY_NAME=...` uses an HDMI dummy plug instead of the virtual screen. Use the name

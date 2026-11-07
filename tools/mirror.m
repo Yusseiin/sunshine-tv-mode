@@ -5,6 +5,9 @@
 //   mirror off                  the built-in screen stops mirroring
 //   mirror main <name part>     extended, not mirrored: the named display becomes the main one (at the origin),
 //                               the others to its right; "mirror main builtin" puts the built-in screen back
+//   mirror mode <name part> <W>x<H>
+//                               set the named display to that resolution (1x). Needed after "on": macOS mirrors
+//                               at a size both screens share (1920x1080), not the display's largest mode.
 // Public CoreGraphics API; changes last for this login session only (kCGConfigureForSession).
 // Build: clang -fobjc-arc -O2 -framework Foundation -framework AppKit -framework CoreGraphics mirror.m -o mirror
 #import <Foundation/Foundation.h>
@@ -82,6 +85,31 @@ int main(int argc, char **argv) {
             if (e != kCGErrorSuccess) { fprintf(stderr, "mirror: display configuration failed (CGError %d)\n", e); return 1; }
             return 0;
         }
+        if ([cmd isEqualToString:@"mode"] && argc > 3) {
+            NSString *want = @(argv[2]);
+            CGDirectDisplayID target = kCGNullDirectDisplay;
+            for (uint32_t i = 0; i < n; i++)
+                if (ids[i] != screen && [name_of(ids[i]) rangeOfString:want options:NSCaseInsensitiveSearch].location != NSNotFound) target = ids[i];
+            if (!target) { fprintf(stderr, "mirror: no online display named like \"%s\"\n", argv[2]); return 1; }
+            size_t w = 0, h = 0;
+            if (sscanf(argv[3], "%zux%zu", &w, &h) != 2) { fprintf(stderr, "mirror: size must be WxH, like 3840x2160\n"); return 2; }
+            CFArrayRef modes = CGDisplayCopyAllDisplayModes(target, NULL);
+            CGDisplayModeRef pick = NULL;
+            for (CFIndex i = 0; modes && i < CFArrayGetCount(modes); i++) {
+                CGDisplayModeRef m = (CGDisplayModeRef)CFArrayGetValueAtIndex(modes, i);
+                if (CGDisplayModeGetWidth(m) == w && CGDisplayModeGetHeight(m) == h && CGDisplayModeGetPixelWidth(m) == w &&
+                    (!pick || CGDisplayModeGetRefreshRate(m) > CGDisplayModeGetRefreshRate(pick))) pick = m;
+            }
+            if (!pick) { fprintf(stderr, "mirror: \"%s\" has no %zux%zu mode\n", argv[2], w, h); if (modes) CFRelease(modes); return 1; }
+            CGDisplayConfigRef cfg;
+            CGError e = CGBeginDisplayConfiguration(&cfg);
+            if (e == kCGErrorSuccess) e = CGConfigureDisplayWithDisplayMode(cfg, target, pick, NULL);
+            if (e == kCGErrorSuccess) e = CGCompleteDisplayConfiguration(cfg, kCGConfigureForSession);
+            else CGCancelDisplayConfiguration(cfg);
+            CFRelease(modes);
+            if (e != kCGErrorSuccess) { fprintf(stderr, "mirror: display configuration failed (CGError %d)\n", e); return 1; }
+            return 0;
+        }
         if ([cmd isEqualToString:@"on"] && argc > 2) {
             NSString *want = @(argv[2]);
             for (uint32_t i = 0; i < n; i++) {
@@ -94,7 +122,7 @@ int main(int argc, char **argv) {
             fprintf(stderr, "mirror: no online display named like \"%s\"\n", argv[2]);
             return 1;
         }
-        fprintf(stderr, "usage: mirror list | on <name part> | off | main <name part>|builtin\n");
+        fprintf(stderr, "usage: mirror list | on <name part> | off | main <name part>|builtin | mode <name part> <W>x<H>\n");
         return 2;
     }
 }
