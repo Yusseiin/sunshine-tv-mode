@@ -101,6 +101,8 @@ swift covers/badge.swift donkey-kong-bananza.png donkey-kong-bananza-hud.png HUD
 
 ## Credits
 
+- Built with [Claude Code](https://claude.com/claude-code), Anthropic's AI coding assistant. Claude wrote the
+  code, scripts and this README, and debugged the setup on a real Mac and TV.
 - The per-launch display serial number (the window server rejects a serial it still remembers) comes from
   [manaflow-ai/cmux](https://github.com/manaflow-ai/cmux)'s `create-virtual-display.m`.
 - The `CGVirtualDisplay` declarations follow those used by [DeskPad](https://github.com/Stengo/DeskPad).
