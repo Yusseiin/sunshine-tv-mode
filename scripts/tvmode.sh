@@ -5,10 +5,12 @@
 #                        switches the display to it. Set the same resolution in Moonlight on the TV.
 #   tvmode.sh off        put the built-in screen back, remove the 16:9 display, then restart Sunshine
 #   tvmode.sh status     show the displays and whether Sunshine is running
+#   (tvswitch.sh runs "on <size>" from a Moonlight app entry.)
 #
 # Sunshine must start AFTER the 16:9 display is connected: on macOS it does not pick up a display
-# connected while it is running and then sends no video (LizardByte/Sunshine#2523). That is why
-# this is a toggle run before and after playing, not a per-stream prep command.
+# connected while it is running and then sends no video (LizardByte/Sunshine#2523). So Sunshine is
+# stopped first, the displays are changed, and Sunshine starts again. That is why this is a toggle run
+# before and after playing, not a per-stream prep command, and why a switch ends any running stream.
 #
 # SOURCE=vscreen: our own "Virtual 16x9 Screen" app (tools/vscreen) holds a virtual 16:9 display
 #                 while it runs. It needs Screen Recording permission (granted 2026-11-07); a rebuild
@@ -35,18 +37,27 @@ online() { $TOOLS/mirror list | grep -qi -- "$DISPLAY_NAME" }
 vscreen_pids() { pgrep -f "Virtual 16x9 Screen.app/Contents/MacOS/vscreen" }
 sunshine_pids() { pgrep -f "Sunshine.app/Contents/MacOS/Sunshine" }
 
-restart_sunshine() {
+stop_sunshine() {
   local p=$(sunshine_pids)
-  if [[ -n $p ]]; then
-    say "stopping Sunshine..."
-    kill -TERM ${=p} 2>/dev/null
-    for i in {1..30}; do [[ -z $(sunshine_pids) ]] && break; sleep 0.5; done
-  fi
+  [[ -z $p ]] && return 0
+  say "stopping Sunshine..."
+  kill -TERM ${=p} 2>/dev/null
+  for i in {1..30}; do [[ -z $(sunshine_pids) ]] && return 0; sleep 0.5; done
+  say "Sunshine did not stop within 15 s; forcing it"
+  p=$(sunshine_pids); [[ -n $p ]] && kill -KILL ${=p} 2>/dev/null
+  sleep 1
+}
+
+start_sunshine() {
   say "starting Sunshine..."
+  local start=$(date +%s)
   open -g -a /Applications/Sunshine.app
   # Sunshine tests its encoders at startup by capturing the main display: finding one means capture works.
+  # Only the new log counts: its first line must be from after this start.
   for i in {1..60}; do
     sleep 0.5
+    local t=$(head -1 $SLOG 2>/dev/null | grep -oE '^\[[0-9-]+ [0-9:]+' | tr -d '[')
+    [[ -n $t ]] && (( $(date -j -f '%Y-%m-%d %H:%M:%S' "$t" +%s 2>/dev/null || print 0) >= start )) || continue
     grep -q "Found H.264 encoder" $SLOG 2>/dev/null && { say "Sunshine is up and captures $(grep -o 'Configuring selected display ([0-9]*)' $SLOG | tail -1 | grep -o '[0-9]*' | sed 's/^/display /'): OK"; return 0; }
     grep -q "Fatal" $SLOG 2>/dev/null && { say "Sunshine reported a problem:"; grep "Fatal" $SLOG | tail -2; return 1; }
   done
@@ -68,6 +79,7 @@ case $1 in
       *) print "unknown size \"$2\": use 1080p, 1440p or 4k"; exit 2 ;;
     esac
     SIZE="${RESOLUTION[1]}x${RESOLUTION[2]}"
+    stop_sunshine
     if [[ $SOURCE == vscreen && -n $(vscreen_pids) ]] && ! $TOOLS/mirror list | grep -i -- "$DISPLAY_NAME" | grep -q -- $'\t'"$SIZE"; then
       say "switching the 16:9 display to $SIZE..."
       $TOOLS/mirror off
@@ -79,21 +91,25 @@ case $1 in
       open -g -n -a "$VAPP" --args ${RESOLUTION[@]} $REFRESH
     fi
     for i in {1..40}; do online && break; sleep 0.25; done
-    online || { say "the 16:9 display \"$DISPLAY_NAME\" is not connected; nothing changed"; exit 1; }
+    if ! online; then
+      say "the 16:9 display \"$DISPLAY_NAME\" is not connected; displays unchanged"
+      start_sunshine; exit 1
+    fi
     if [[ $MODE == mirror ]]; then $TOOLS/mirror on "$DISPLAY_NAME"; else $TOOLS/mirror main "$DISPLAY_NAME"; fi
     # macOS mirrors at a size both screens share (1920x1080), so set the size asked for afterwards.
     [[ $SOURCE == vscreen ]] && { $TOOLS/mirror mode "$DISPLAY_NAME" $SIZE || say "could not set the 16:9 display to $SIZE"; }
     sleep 1
     say "TV mode ON ($SOURCE, $MODE):"; $TOOLS/mirror list
-    restart_sunshine
+    start_sunshine
     ;;
   off)
+    stop_sunshine
     $TOOLS/mirror off
     $TOOLS/mirror main builtin
     [[ $SOURCE == vscreen ]] && stop_vscreen
     sleep 1
     say "TV mode OFF:"; $TOOLS/mirror list
-    restart_sunshine
+    start_sunshine
     ;;
   status)
     $TOOLS/mirror list

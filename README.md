@@ -16,8 +16,10 @@ Sunshine so it captures that display.
 | `tools/mirror.m` | `mirror list \| on <name> \| off \| main <name>\|builtin \| mode <name> <W>x<H>`: switches mirroring, picks the main display and sets a display's resolution. Uses public CoreGraphics API; changes last for the login session only. |
 | `scripts/tvmode.sh` | `tvmode.sh on [1080p\|1440p\|4k] \| off \| status`: the TV mode toggle. |
 | `shortcuts/` | `TV Mode ON.command`, `TV Mode ON 4K.command`, `TV Mode OFF.command`: double-click versions of the toggle. |
+| `scripts/tvswitch.sh` | `tvswitch.sh 4k \| 1440p \| 1080p \| off`: the toggle as a Moonlight app entry, to switch from the sofa. |
 | `scripts/nxgame.sh` | `nxgame.sh start\|stop <bundle id> [VAR=value ...]`: starts an nxnative game fullscreen without its launcher window and quits it cleanly when the stream ends. |
 | `covers/badge.swift` | `swift badge.swift in.png out.png HUD`: draws a text badge in the top-right corner of a Moonlight cover. |
+| `covers/cover.swift` | `swift cover.swift out.png 4K "TV Mode" 3df273`: draws a plain cover (a TV with big text and a caption). The `tv-mode-*.png` covers were made with it. |
 | `examples/` | A Sunshine `apps.json` with nxnative game entries, and the `sunshine.conf` used with it. |
 
 ## Requirements
@@ -51,6 +53,24 @@ installed app; `./install.sh --rebuild-vscreen` replaces it, and you must then a
 `tvmode.sh status` shows the displays and whether Sunshine and the virtual screen are running. Each run is
 logged to `~/.config/sunshine/tvmode.log`.
 
+### Switching from Moonlight
+
+`examples/apps.json` has three entries that switch TV mode from the TV: **TV Mode 4K**, **TV Mode 1080p**
+and **TV Mode OFF**. Each runs `tvswitch.sh` as a detached command:
+
+```json
+{ "name": "TV Mode 4K", "detached": ["/Users/YOUR_USER/.config/sunshine/scripts/tvswitch.sh 4k"],
+  "image-path": "/Users/YOUR_USER/.config/sunshine/covers/tv-mode-4k.png" }
+```
+
+- A switch restarts Sunshine, so **the stream that started it ends** after a few seconds. Reconnect in
+  Moonlight about 10 seconds later and start a game.
+- If TV mode is already at that size, nothing changes; the entry just streams the desktop, so quit it.
+- The switch runs in a session of its own (`setsid`, through the system Perl because macOS has no `setsid`
+  command), so Sunshine stopping does not stop it halfway.
+- `tvmode.sh` stops Sunshine *before* it changes the displays, so Sunshine never sees its display vanish
+  mid-stream.
+
 ### 1440p and 4K
 
 `tvmode.sh on 1440p` or `tvmode.sh on 4k` (or **TV Mode ON 4K**) runs the virtual display at 2560×1440 or
@@ -81,8 +101,9 @@ At the top of `tvmode.sh`:
 
 On macOS, Sunshine does not pick up a display connected while it is running: you get "no video received" or
 a "Hang detected" crash (LizardByte/Sunshine#2523). So the 16:9 display has to exist *before* Sunshine
-starts. `tvmode.sh` connects it, then restarts Sunshine. After the restart it checks Sunshine's log: Sunshine
-tests its encoders by capturing the main display, so a found H.264 encoder means capture works.
+starts. `tvmode.sh` stops Sunshine, connects the display, then starts Sunshine again. Afterwards it checks
+Sunshine's new log: Sunshine tests its encoders by capturing the main display, so a found H.264 encoder means
+capture works.
 
 ## nxnative games in Moonlight
 

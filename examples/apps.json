@@ -63,6 +63,27 @@
         }
       ],
       "image-path": "/Users/YOUR_USER/.config/sunshine/covers/pokemon-pokopia-hud.png"
+    },
+    {
+      "name": "TV Mode 4K",
+      "detached": [
+        "/Users/YOUR_USER/.config/sunshine/scripts/tvswitch.sh 4k"
+      ],
+      "image-path": "/Users/YOUR_USER/.config/sunshine/covers/tv-mode-4k.png"
+    },
+    {
+      "name": "TV Mode 1080p",
+      "detached": [
+        "/Users/YOUR_USER/.config/sunshine/scripts/tvswitch.sh 1080p"
+      ],
+      "image-path": "/Users/YOUR_USER/.config/sunshine/covers/tv-mode-1080p.png"
+    },
+    {
+      "name": "TV Mode OFF",
+      "detached": [
+        "/Users/YOUR_USER/.config/sunshine/scripts/tvswitch.sh off"
+      ],
+      "image-path": "/Users/YOUR_USER/.config/sunshine/covers/tv-mode-off.png"
     }
   ]
 }
