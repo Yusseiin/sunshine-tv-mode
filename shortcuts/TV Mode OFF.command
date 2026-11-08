@@ -1,4 +1,8 @@
 #!/bin/zsh
 # Double-click after streaming: the built-in screen goes back to normal, then Sunshine restarts.
-~/.config/sunshine/scripts/tvmode.sh off
-print "\nYou can close this window."
+# The window closes by itself when it worked, and stays open if something went wrong.
+if ~/.config/sunshine/scripts/tvmode.sh off; then
+  ~/.config/sunshine/scripts/close-terminal.sh
+else
+  print "\nSomething went wrong (see above), so this window stays open."
+fi

@@ -9,8 +9,8 @@ cd "${0:A:h}"
 D=~/.config/sunshine
 APP="$D/tools/vscreen/Virtual 16x9 Screen.app"
 mkdir -p $D/scripts $D/tools/vscreen $D/covers
-cp scripts/tvmode.sh scripts/tvswitch.sh scripts/nxgame.sh $D/scripts/
-chmod +x $D/scripts/tvmode.sh $D/scripts/tvswitch.sh $D/scripts/nxgame.sh
+cp scripts/tvmode.sh scripts/tvswitch.sh scripts/nxgame.sh scripts/close-terminal.sh $D/scripts/
+chmod +x $D/scripts/tvmode.sh $D/scripts/tvswitch.sh $D/scripts/nxgame.sh $D/scripts/close-terminal.sh
 cp build/mirror tools/mirror.m $D/tools/
 cp tools/vscreen/vscreen.m $D/tools/vscreen/
 cp covers/badge.swift covers/cover.swift covers/tv-mode-*.png $D/covers/

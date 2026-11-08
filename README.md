@@ -15,7 +15,8 @@ Sunshine so it captures that display.
 | `tools/vscreen/` | **Virtual 16x9 Screen.app**: an invisible background app (no Dock icon, no window) that keeps a virtual 16:9 display connected while it runs. It uses CoreGraphics' private `CGVirtualDisplay` classes, the same ones DeskPad and BetterDisplay use. |
 | `tools/mirror.m` | `mirror list \| on <name> \| off \| main <name>\|builtin \| mode <name> <W>x<H>`: switches mirroring, picks the main display and sets a display's resolution. Uses public CoreGraphics API; changes last for the login session only. |
 | `scripts/tvmode.sh` | `tvmode.sh on [1080p\|1440p\|4k] \| off \| status`: the TV mode toggle. |
-| `shortcuts/` | `TV Mode ON.command`, `TV Mode ON 4K.command`, `TV Mode OFF.command`: double-click versions of the toggle. |
+| `shortcuts/` | `TV Mode ON.command`, `TV Mode ON 4K.command`, `TV Mode OFF.command`: double-click versions of the toggle. Their Terminal window closes by itself when the switch worked and stays open to show the error when it didn't. |
+| `scripts/close-terminal.sh` | Closes the Terminal window it runs in, a moment after the shortcut ends (used by the shortcuts). |
 | `scripts/tvswitch.sh` | `tvswitch.sh 4k \| 1440p \| 1080p \| off`: the toggle as a Moonlight app entry, to switch from the sofa. |
 | `scripts/nxgame.sh` | `nxgame.sh start\|stop <bundle id> [VAR=value ...]`: starts an nxnative game fullscreen without its launcher window and quits it cleanly when the stream ends. |
 | `covers/badge.swift` | `swift badge.swift in.png out.png HUD`: draws a text badge in the top-right corner of a Moonlight cover. |
@@ -34,7 +35,7 @@ Sunshine so it captures that display.
 ./install.sh
 ```
 
-This builds the tools into `build/` and installs everything into `~/.config/sunshine`. Copy the two
+This builds the tools into `build/` and installs everything into `~/.config/sunshine`. Copy the
 `shortcuts/*.command` files anywhere you like, for example the Desktop.
 
 The first `tvmode.sh on` asks for **Screen Recording** permission for *Virtual 16x9 Screen*: macOS only brings
